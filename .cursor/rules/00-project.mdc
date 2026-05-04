@@ -1,0 +1,26 @@
+---
+description: 基于 Laravel + Blade + Vue3 + Element Plus 的轻量级后台管理系统
+globs:
+  - "**/*.php"
+  - "**/*.blade.php"
+  - "**/*.js"
+alwaysApply: true
+---
+
+# 项目架构
+
+本项目采用：
+
+- Laravel 作为后端框架
+- Blade 作为页面模板
+- Vue3 + Element Plus 作为页面交互增强
+- 页面以服务端渲染为主（SSR-like）
+- 前端使用本地静态资源，不使用构建工具
+
+---
+
+# 核心原则
+
+- 优先保持 Laravel + Blade 架构
+- Vue 用于交互增强，不构建 SPA
+- 保持轻量、可维护、低依赖

@@ -1,0 +1,13 @@
+-- Neo Admin 演示数据说明
+--
+-- 强烈建议使用 Laravel 迁移与填充自动写入（与哈希密码、外键顺序一致）：
+--   php artisan migrate:fresh --seed
+--
+-- 演示账号（由 AdminDemoSeeder 写入）：
+--   admin / admin123        — 超级管理员
+--   operator / operator123  — 仅「工作台 + 用户列表只读」演示角色
+--
+-- 核心表：roles, permissions, menus, role_menu, users, admin_operation_logs
+--
+-- 如需纯 SQL 备份，请在填充完成后使用 mysqldump 导出上述表，而非手写 INSERT，
+-- 以免 bcrypt、自增 ID 与菜单 path 与当前 APP_URL 不一致。

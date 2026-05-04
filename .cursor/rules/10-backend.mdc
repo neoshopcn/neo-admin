@@ -1,0 +1,226 @@
+---
+description: Laravel Admin 后端开发规范
+globs:
+  - "**/*.php"
+alwaysApply: true
+---
+
+# 🧠 路由规范（必须遵守）
+
+- 后台所有路由统一定义在：
+
+  routes/admin.php
+
+- 不允许写在：
+
+  - routes/web.php
+  - routes/api.php
+
+- 必须使用：
+
+  Route::prefix('admin')->name('admin.')->group(function () {
+
+- admin 仅作为 URL 前缀，不作为目录结构
+
+---
+
+# 🧩 路由分层
+
+## 页面路由（content）
+
+- 路径：/admin/content/*
+- 使用 Controller::__invoke
+- 返回 Blade 页面
+
+示例：
+
+Route::get('users', UserManageController::class)
+
+---
+
+## API 路由（api）
+
+- 路径：/admin/api/*
+- 返回 JsonResponse
+- 使用标准 CRUD 方法
+
+---
+
+# 🔐 权限规范（必须）
+
+权限命名统一：
+
+- list → xxx:list
+- view → xxx:view
+- create → xxx:create
+- edit → xxx:edit
+- delete → xxx:delete
+
+---
+
+## 使用方式
+
+- 页面路由：
+
+  ->middleware('admin.perm:xxx:list')
+
+- API 路由：
+
+  每个操作单独权限控制
+
+---
+
+# 🧱 Controller 规范
+
+## Content Controller（页面）
+
+- 命名：*ManageController / *Controller
+- 使用 __invoke()
+- 返回 view()
+
+示例：
+
+return view('admin.xxx.index', [
+    'neo' => $config
+]);
+
+---
+
+## API Controller
+
+- 命名空间：App\Http\Controllers\Admin\Api
+- 返回 JsonResponse
+- 使用标准方法：
+
+  - index
+  - show
+  - store
+  - update
+  - destroy
+
+---
+
+# 📦 响应规范（必须统一）
+
+使用 ApiResponse trait：
+
+- 成功：
+
+  return $this->ok($data);
+
+- 失败：
+
+  return $this->fail(message, code)
+
+---
+
+# 🔍 列表查询规范
+
+必须支持：
+
+- keyword 模糊搜索
+- 精确筛选（status 等）
+- 时间范围（created_at）
+
+统一使用：
+
+- applyKeyword
+- applyExact
+- applyDateRange
+
+---
+
+# 📄 分页规范
+
+- 参数：
+
+  - page
+  - page_size（默认 15，最大 100）
+
+- 返回必须包含：
+
+  - list
+  - pagination
+
+---
+
+# 🧾 数据校验规范
+
+- 所有写操作必须使用：
+
+  $request->validate()
+
+- 唯一性：
+
+  Rule::unique(...)
+
+- 数组字段：
+
+  role_ids.*
+  exists:roles,id
+
+---
+
+# 🔄 CRUD 规范
+
+标准接口：
+
+- index（列表）
+- show（详情）
+- store（创建）
+- update（更新）
+- destroy（删除）
+
+扩展接口：
+
+- resetPassword
+- assignMenus
+
+---
+
+# ⚠️ 安全规则（必须）
+
+- 禁止删除当前登录用户
+- 所有 ID 必须 whereNumber
+- 不存在数据必须返回 fail
+
+---
+
+# 🧠 数据处理规范
+
+- 不信任前端输入
+- 必须类型转换（int / string）
+- 数组必须去重、过滤
+
+---
+
+# 🔗 关联关系
+
+- 使用 with() 预加载
+- 多对多使用 sync()
+
+---
+
+# 🚫 禁止行为
+
+- 在 Controller 写复杂业务逻辑
+- 直接返回未处理的模型数据
+- 不做校验直接写入数据库
+
+---
+
+# 🚀 生成规则（高优先级）
+
+当生成后台模块时，必须：
+
+1. 注册 routes（content + api）
+2. 创建 Content Controller（__invoke）
+3. 创建 API Controller（CRUD）
+4. 添加权限控制（list / view / create / edit / delete）
+5. 使用统一响应结构（ok / fail）
+
+---
+
+# 🧠 一句话原则
+
+后端 = 标准 CRUD + 权限控制 + 统一响应 + 可筛选分页

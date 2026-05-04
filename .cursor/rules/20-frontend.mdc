@@ -1,0 +1,23 @@
+---
+description: Vue3 + Element Plus frontend rules
+globs:
+  - "**/*.blade.php"
+  - "**/*.js"
+alwaysApply: true
+---
+
+# Frontend Rules
+
+- 使用 Vue3 IIFE 版本
+- 使用 Element Plus 本地静态资源
+- 使用 axios 请求接口
+
+---
+
+# Forbidden
+
+- .vue files
+- Vite
+- Webpack
+- npm
+- CDN imports

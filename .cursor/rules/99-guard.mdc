@@ -1,0 +1,25 @@
+---
+description: project guard rules
+globs:
+  - "**/*"
+alwaysApply: true
+---
+
+# 🔒 Protected Directories（禁止修改）
+
+- vendor/**
+- bootstrap/cache/**
+
+---
+
+# ⚠️ Conditional（仅在明确要求时允许）
+
+- tests/**
+
+---
+
+# 🚫 Dangerous Operations（禁止主动执行）
+
+- 删除目录
+- 批量重构项目结构
+- 修改第三方库源码
