@@ -30,6 +30,11 @@ return [
             'max_kb' => (int) env('UPLOAD_RICHTEXT_MAX_KB', 3072),
             'mimes' => ['jpeg', 'jpg', 'png', 'gif', 'webp'],
         ],
+        'miniprogram_logo' => [
+            'directory' => 'uploads/miniprogram-logos',
+            'max_kb' => (int) env('UPLOAD_MINIPROGRAM_LOGO_MAX_KB', 2048),
+            'mimes' => ['jpeg', 'jpg', 'png', 'gif', 'webp'],
+        ],
     ],
 
 ];

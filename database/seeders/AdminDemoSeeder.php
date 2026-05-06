@@ -8,6 +8,7 @@ use Database\Seeders\Admin\AdminSystemDirectorySeeder;
 use Database\Seeders\Admin\DashboardMenuSeeder;
 use Database\Seeders\Admin\DocumentationMenuSeeder;
 use Database\Seeders\Admin\MenuManagementMenuSeeder;
+use Database\Seeders\Admin\MiniProgramMenuSeeder;
 use Database\Seeders\Admin\OperationLogMenuSeeder;
 use Database\Seeders\Admin\RecycleBinMenuSeeder;
 use Database\Seeders\Admin\ResourceMenuSeeder;
@@ -36,6 +37,7 @@ class AdminDemoSeeder extends Seeder
                 RoleManagementMenuSeeder::class,
                 MenuManagementMenuSeeder::class,
                 OperationLogMenuSeeder::class,
+                MiniProgramMenuSeeder::class,
                 AdminDemoRolesAndUsersSeeder::class,
             ]);
         });

@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Admin\Api\DocDemoController;
 use App\Http\Controllers\Admin\Api\MenuController as ApiMenuController;
+use App\Http\Controllers\Admin\Api\MiniprogramController as ApiMiniprogramController;
+use App\Http\Controllers\Admin\Api\MiniprogramUserController as ApiMiniprogramUserController;
 use App\Http\Controllers\Admin\Api\OperationLogController;
 use App\Http\Controllers\Admin\Api\PermissionOptionsController;
 use App\Http\Controllers\Admin\Api\RecycleBinItemController;
@@ -15,6 +17,8 @@ use App\Http\Controllers\Admin\CaptchaController;
 use App\Http\Controllers\Admin\Content\DashboardController as ContentDashboardController;
 use App\Http\Controllers\Admin\Content\DocumentationController;
 use App\Http\Controllers\Admin\Content\MenuManageController;
+use App\Http\Controllers\Admin\Content\MiniprogramManageController;
+use App\Http\Controllers\Admin\Content\MiniprogramUserManageController;
 use App\Http\Controllers\Admin\Content\OperationLogPageController;
 use App\Http\Controllers\Admin\Content\ProfileController as ContentProfileController;
 use App\Http\Controllers\Admin\Content\RecycleBinManageController;
@@ -82,6 +86,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('recycle-bin', RecycleBinManageController::class)
                 ->middleware('admin.perm:recycle_bin:list')
                 ->name('recycle_bin');
+
+            Route::get('miniprograms', MiniprogramManageController::class)
+                ->middleware('admin.perm:miniprogram:list')
+                ->name('miniprograms');
+            Route::get('miniprogram-users', MiniprogramUserManageController::class)
+                ->middleware('admin.perm:miniprogram_user:list')
+                ->name('miniprogram_users');
         });
 
         Route::prefix('api')->name('api.')->middleware(['admin.log'])->group(function () {
@@ -132,6 +143,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('resources/{id}', [ApiResourceController::class, 'show'])->whereNumber('id')->middleware('admin.perm:resource:view')->name('resources.show');
             Route::put('resources/{id}', [ApiResourceController::class, 'update'])->whereNumber('id')->middleware('admin.perm:resource:edit')->name('resources.update');
             Route::delete('resources/{id}', [ApiResourceController::class, 'destroy'])->whereNumber('id')->middleware('admin.perm:resource:delete')->name('resources.destroy');
+
+            Route::get('miniprograms', [ApiMiniprogramController::class, 'index'])->middleware('admin.perm:miniprogram:list')->name('miniprograms.index');
+            Route::get('miniprograms/{id}', [ApiMiniprogramController::class, 'show'])->whereNumber('id')->middleware('admin.perm:miniprogram:view')->name('miniprograms.show');
+            Route::post('miniprograms', [ApiMiniprogramController::class, 'store'])->middleware('admin.perm:miniprogram:create')->name('miniprograms.store');
+            Route::put('miniprograms/{id}', [ApiMiniprogramController::class, 'update'])->whereNumber('id')->middleware('admin.perm:miniprogram:edit')->name('miniprograms.update');
+            Route::delete('miniprograms/{id}', [ApiMiniprogramController::class, 'destroy'])->whereNumber('id')->middleware('admin.perm:miniprogram:delete')->name('miniprograms.destroy');
+
+            Route::get('miniprogram-users', [ApiMiniprogramUserController::class, 'index'])->middleware('admin.perm:miniprogram_user:list')->name('miniprogram_users.index');
+            Route::get('miniprogram-users/{id}', [ApiMiniprogramUserController::class, 'show'])->whereNumber('id')->middleware('admin.perm:miniprogram_user:view')->name('miniprogram_users.show');
+            Route::put('miniprogram-users/{id}', [ApiMiniprogramUserController::class, 'update'])->whereNumber('id')->middleware('admin.perm:miniprogram_user:edit')->name('miniprogram_users.update');
         });
     });
 });
