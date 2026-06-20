@@ -1,0 +1,57 @@
+# 依赖产物目录
+**/node_modules/
+**/dist/
+**/build/
+**/.pnpm/
+
+# git、缓存、测试报告
+.git/
+.cache/
+coverage/
+
+# 日志文件
+**/logs/
+**/*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 环境变量（全部环境文件）
+**/.env*
+
+# IDE 配置目录
+.idea/
+.vscode/
+
+# 密钥证书文件（全局屏蔽）
+**/*.pem
+**/*.key
+**/*.p12
+
+# 系统隐藏文件
+**/.DS_Store
+**/Thumbs.db
+
+# 数据库文件（只屏蔽数据文件，不屏蔽.sql源码）
+**/*.db
+**/*.sqlite
+**/*.sqlite3
+**/*.db3
+
+# 临时压缩包（仅根目录，不屏蔽业务静态资源）
+*.zip
+*.tar.gz
+*.rar
+
+# 临时媒体文档（注释掉下面两行，如果项目需要读取pdf/mp4静态资源）
+# *.pdf
+# *.mp4
+
+# 编辑器临时文件
+*.swp
+*.swo
+*.bak
+
+# 临时目录
+**/tmp/
+**/temp/
