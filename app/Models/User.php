@@ -10,11 +10,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Concerns\RecyclesToBin;
+use App\Models\Concerns\SerializesDisplayDates;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, RecyclesToBin;
+    use HasFactory, Notifiable, RecyclesToBin, SerializesDisplayDates;
 
     protected $fillable = [
         'username',
@@ -43,6 +44,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'status' => 'integer',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
         ];
     }
 

@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesDisplayDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 
 class Resource extends Model
 {
+    use SerializesDisplayDates;
+
     protected $fillable = [
         'original_name',
         'storage_path',

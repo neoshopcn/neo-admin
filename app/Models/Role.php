@@ -2,17 +2,22 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesDisplayDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Role extends Model
 {
+    use SerializesDisplayDates;
+
     protected $fillable = ['name', 'code', 'status'];
 
     protected function casts(): array
     {
         return [
             'status' => 'integer',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
         ];
     }
 

@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesDisplayDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AdminLoginLog extends Model
 {
+    use SerializesDisplayDates;
+
     public $timestamps = false;
 
     protected $fillable = [

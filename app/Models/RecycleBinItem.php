@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesDisplayDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /** 回收站条目 */
 class RecycleBinItem extends Model
 {
+    use SerializesDisplayDates;
+
     public $timestamps = false;
 
     protected $table = 'recycle_bin_items';

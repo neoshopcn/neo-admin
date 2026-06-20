@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesDisplayDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Menu extends Model
 {
+    use SerializesDisplayDates;
+
     protected $fillable = [
         'parent_id', 'name', 'icon', 'path', 'sort', 'status', 'type',
         'permission_code', 'permission_id',
