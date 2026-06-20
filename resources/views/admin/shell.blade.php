@@ -128,6 +128,9 @@
                                 </el-dropdown-menu>
                             </template>
                         </el-dropdown>
+                        <span class="collapse-hit" @click="refreshContent" title="刷新当前页">
+                            <el-icon size="20"><Refresh /></el-icon>
+                        </span>
                         <el-popover placement="bottom-end" :width="268" trigger="hover">
                             <template #reference>
                                 <span class="user-avatar-hit" title="账户菜单">
@@ -169,7 +172,7 @@
                 </div>
             </div>
             <el-main style="padding:0;flex:1;min-height:0">
-                <iframe :src="iframeSrc" style="width:100%;height:100%;border:0;display:block"></iframe>
+                <iframe ref="contentFrame" :src="iframeSrc" style="width:100%;height:100%;border:0;display:block"></iframe>
             </el-main>
         </el-container>
     </el-container>
@@ -291,6 +294,24 @@
                 this.themeKey = key;
                 localStorage.setItem('neo_admin_theme', key);
                 this.applyThemeVars();
+            },
+            refreshContent() {
+                const iframe = this.$refs.contentFrame;
+                if (iframe) {
+                    try {
+                        if (iframe.contentWindow) {
+                            iframe.contentWindow.location.reload();
+                            return;
+                        }
+                    } catch (e) {
+                        /* ignore */
+                    }
+                }
+                const url = this.activePath;
+                this.iframeSrc = '';
+                this.$nextTick(() => {
+                    this.iframeSrc = url;
+                });
             },
             toggleCollapse() {
                 this.collapsed = !this.collapsed;

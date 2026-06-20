@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class SidebarController extends Controller
@@ -61,28 +62,54 @@ class SidebarController extends Controller
         ]);
     }
 
-    /** 更新当前用户资料 */
+    /** 更新当前用户资料（scope=basic 基本信息 / scope=password 修改密码） */
     public function updateProfile(Request $request): JsonResponse
     {
         $user = $request->user();
+        $scope = (string) $request->input('scope', 'basic');
 
-        try {
-            $data = $request->validate([
-                'name' => ['required', 'string', 'max:120'],
-                'email' => ['nullable', 'string', 'email', 'max:190'],
-                'avatar' => ['nullable', 'string', 'max:512'],
-            ], [
-                'name.required' => '请填写姓名',
-                'email.email' => '邮箱格式不正确',
-            ]);
-        } catch (ValidationException $e) {
-            return $this->fail($e->validator->errors()->first(), 422, 422);
+        if ($scope === 'password') {
+            try {
+                $data = $request->validate([
+                    'current_password' => ['required', 'string'],
+                    'password' => ['required', 'string', 'min:6', 'max:64', 'confirmed'],
+                ], [
+                    'current_password.required' => '请填写当前密码',
+                    'password.required' => '请填写新密码',
+                    'password.min' => '新密码至少 6 位',
+                    'password.confirmed' => '两次输入的新密码不一致',
+                ]);
+            } catch (ValidationException $e) {
+                return $this->fail($e->validator->errors()->first(), 422, 422);
+            }
+
+            if (! Hash::check($data['current_password'], $user->password)) {
+                return $this->fail('当前密码不正确', 422, 422);
+            }
+
+            $user->password = $data['password'];
+            $user->save();
+        } elseif ($scope === 'basic') {
+            try {
+                $data = $request->validate([
+                    'name' => ['required', 'string', 'max:120'],
+                    'email' => ['nullable', 'string', 'email', 'max:190'],
+                    'avatar' => ['nullable', 'string', 'max:512'],
+                ], [
+                    'name.required' => '请填写姓名',
+                    'email.email' => '邮箱格式不正确',
+                ]);
+            } catch (ValidationException $e) {
+                return $this->fail($e->validator->errors()->first(), 422, 422);
+            }
+
+            $user->name = $data['name'];
+            $user->email = $data['email'] ?? null;
+            $user->avatar = $data['avatar'] ?? null;
+            $user->save();
+        } else {
+            return $this->fail('无效的保存类型', 422, 422);
         }
-
-        $user->name = $data['name'];
-        $user->email = $data['email'] ?? null;
-        $user->avatar = $data['avatar'] ?? null;
-        $user->save();
 
         $user->loadMissing('roles');
 
