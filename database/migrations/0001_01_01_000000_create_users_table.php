@@ -22,6 +22,9 @@ return new class extends Migration
             $table->foreignId('role_id')->nullable();
             $table->unsignedTinyInteger('status')->default(1)->comment('1启用 0禁用');
             $table->string('google2fa_secret', 255)->nullable();
+            $table->unsignedTinyInteger('google2fa_enabled')->default(0)->comment('1开启 0关闭');
+            $table->timestamp('google2fa_locked_until')->nullable()->comment('2FA验证失败锁定截止时间');
+            $table->unsignedBigInteger('google2fa_last_timeslice')->nullable()->comment('上次成功验证的 TOTP 时间片，防重放');
             $table->rememberToken();
             $table->timestamps();
         });

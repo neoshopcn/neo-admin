@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Concerns\ApiResponse;
 use App\Http\Controllers\Admin\Concerns\AppliesListFilters;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Google2faService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -137,6 +138,54 @@ class UserController extends Controller
         $user->save();
 
         return $this->ok(['password_plain' => $pwd]);
+    }
+
+    public function enableGoogle2fa(int $id, Google2faService $google2fa): JsonResponse
+    {
+        $user = User::query()->find($id);
+        if (! $user) {
+            return $this->fail('记录不存在', 404, 404);
+        }
+
+        if ($user->isGoogle2faEnabled()) {
+            return $this->fail('该用户已开启双因子验证');
+        }
+
+        $payload = $google2fa->enable($user);
+
+        return $this->ok($payload);
+    }
+
+    public function disableGoogle2fa(int $id, Google2faService $google2fa): JsonResponse
+    {
+        $user = User::query()->find($id);
+        if (! $user) {
+            return $this->fail('记录不存在', 404, 404);
+        }
+
+        if (! $user->isGoogle2faEnabled()) {
+            return $this->fail('该用户未开启双因子验证');
+        }
+
+        $google2fa->disable($user);
+
+        return $this->ok(true);
+    }
+
+    public function unlockGoogle2fa(int $id, Google2faService $google2fa): JsonResponse
+    {
+        $user = User::query()->find($id);
+        if (! $user) {
+            return $this->fail('记录不存在', 404, 404);
+        }
+
+        if (! $user->isGoogle2faLocked()) {
+            return $this->fail('该用户未被锁定');
+        }
+
+        $google2fa->unlock($user);
+
+        return $this->ok(true);
     }
 
     /**

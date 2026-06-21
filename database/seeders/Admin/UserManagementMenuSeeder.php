@@ -14,6 +14,9 @@ class UserManagementMenuSeeder extends Seeder
         'user:delete' => '删除用户',
         'user:view' => '查看用户',
         'user:reset_password' => '重置用户密码',
+        'user:google2fa_enable' => '开启用户双因子验证',
+        'user:google2fa_disable' => '关闭用户双因子验证',
+        'user:google2fa_unlock' => '解除用户双因子锁定',
     ];
 
     public function run(): void
@@ -38,6 +41,9 @@ class UserManagementMenuSeeder extends Seeder
             ['user:delete', '用户-删除'],
             ['user:view', '用户-查看'],
             ['user:reset_password', '用户-重置密码'],
+            ['user:google2fa_enable', '用户-开启双因子'],
+            ['user:google2fa_disable', '用户-关闭双因子'],
+            ['user:google2fa_unlock', '用户-解除双因子锁定'],
         ] as [$code, $label]) {
             AdminSeedSupport::syncMenuByPermissionCode($code, [
                 'parent_id' => $parent->id,

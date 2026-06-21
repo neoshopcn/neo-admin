@@ -102,6 +102,20 @@
       .neo-table-toolbar .el-button + .el-button {
         margin-left: 0;
       }
+      .neo-table-shell .neo-table-actions-col .cell {
+        white-space: nowrap;
+        overflow: visible;
+      }
+      .neo-table-actions {
+        display: inline-flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        white-space: nowrap;
+        vertical-align: middle;
+      }
+      .neo-table-actions .el-button.is-link {
+        flex-shrink: 0;
+      }
     `;
     document.head.appendChild(el);
   }
@@ -115,6 +129,15 @@
   function cellVal(row, prop) {
     if (!prop) return '';
     return prop.split('.').reduce((o, k) => (o == null ? o : o[k]), row);
+  }
+
+  function extraVisible(ex, row) {
+    if (!ex.when) return true;
+    const w = ex.when;
+    const v = cellVal(row, w.field);
+    if (w.equals !== undefined) return v == w.equals;
+    if (w.truthy !== undefined) return !!v === w.truthy;
+    return true;
   }
 
   global.mountNeoTable = function (selector, cfg, hooks) {
@@ -377,6 +400,10 @@
         },
         renderCell(row, col) {
           const v = cellVal(row, col.prop);
+          if (col.tag && col.statusLabels && col.statusLabels.length >= 2) {
+            const on = Number(v) === 1;
+            return on ? col.statusLabels[0] : col.statusLabels[1];
+          }
           if (col.tag && col.prop === 'status') {
             const on = Number(v) === 1;
             if (col.statusLabels && col.statusLabels.length >= 2) {
@@ -388,8 +415,12 @@
         },
         tagType(col, row) {
           const v = cellVal(row, col.prop);
+          if (col.tag && col.statusLabels) return Number(v) === 1 ? 'success' : 'info';
           if (col.prop === 'status') return Number(v) === 1 ? 'success' : 'info';
           return '';
+        },
+        extraVisible(ex, row) {
+          return extraVisible(ex, row);
         },
         fieldDisabled(f) {
           return this.dialogMode === 'edit' && f.disableOnEdit;
@@ -524,14 +555,16 @@
                   </template>
                 </el-table-column>
 
-                <el-table-column v-if="!cfg.hideActions" fixed="right" label="操作" width="300">
+                <el-table-column v-if="!cfg.hideActions" fixed="right" label="操作" :min-width="cfg.actionsMinWidth || 420" class-name="neo-table-actions-col">
                   <template #default="{ row }">
-                    <el-button v-if="cfg.perms?.view && hasPerm(cfg.perms.view)" link type="primary" @click="openView(row)">查看</el-button>
-                    <el-button v-if="cfg.perms?.edit && hasPerm(cfg.perms.edit)" link type="primary" @click="openEdit(row)">编辑</el-button>
-                    <el-button v-if="cfg.perms?.delete && hasPerm(cfg.perms.delete)" link type="danger" @click="remove(row)">删除</el-button>
-                    <template v-for="ex in (cfg.perms?.extra||[])" :key="ex.key">
-                      <el-button v-if="hasPerm(ex.perm)" link type="warning" @click="handleExtra(ex.key, row)">{{ ex.label }}</el-button>
-                    </template>
+                    <span class="neo-table-actions">
+                      <el-button v-if="cfg.perms?.view && hasPerm(cfg.perms.view)" link type="primary" @click="openView(row)">查看</el-button>
+                      <el-button v-if="cfg.perms?.edit && hasPerm(cfg.perms.edit)" link type="primary" @click="openEdit(row)">编辑</el-button>
+                      <el-button v-if="cfg.perms?.delete && hasPerm(cfg.perms.delete)" link type="danger" @click="remove(row)">删除</el-button>
+                      <template v-for="ex in (cfg.perms?.extra||[])" :key="ex.key">
+                        <el-button v-if="hasPerm(ex.perm) && extraVisible(ex, row)" link :type="ex.btnType || 'warning'" @click="handleExtra(ex.key, row)">{{ ex.label }}</el-button>
+                      </template>
+                    </span>
                   </template>
                 </el-table-column>
               </el-table>

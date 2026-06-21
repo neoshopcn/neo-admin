@@ -11,6 +11,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Concerns\RecyclesToBin;
 use App\Models\Concerns\SerializesDisplayDates;
+use App\Support\DateTimeFormat;
 
 class User extends Authenticatable
 {
@@ -25,17 +26,23 @@ class User extends Authenticatable
         'password',
         'status',
         'google2fa_secret',
+        'google2fa_enabled',
+        'google2fa_locked_until',
+        'google2fa_last_timeslice',
     ];
 
     protected $appends = [
         'avatar_url',
         'role_names',
+        'google2fa_is_locked',
+        'google2fa_lock_label',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
         'google2fa_secret',
+        'google2fa_last_timeslice',
     ];
 
     protected function casts(): array
@@ -44,6 +51,9 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'status' => 'integer',
+            'google2fa_enabled' => 'integer',
+            'google2fa_locked_until' => 'datetime',
+            'google2fa_last_timeslice' => 'integer',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
@@ -75,6 +85,38 @@ class User extends Authenticatable
             : $this->roles()->get(['id', 'code', 'name']);
 
         return $roles->contains(fn (Role $r) => $r->isSuper());
+    }
+
+    public function isGoogle2faEnabled(): bool
+    {
+        return (int) $this->google2fa_enabled === 1
+            && $this->google2fa_secret !== null
+            && $this->google2fa_secret !== '';
+    }
+
+    public function isGoogle2faLocked(): bool
+    {
+        if ($this->google2fa_locked_until === null) {
+            return false;
+        }
+
+        return $this->google2fa_locked_until->isFuture();
+    }
+
+    protected function google2faIsLocked(): Attribute
+    {
+        return Attribute::get(fn (): bool => $this->isGoogle2faLocked());
+    }
+
+    protected function google2faLockLabel(): Attribute
+    {
+        return Attribute::get(function (): string {
+            if ($this->isGoogle2faLocked()) {
+                return '至 '.DateTimeFormat::display($this->google2fa_locked_until);
+            }
+
+            return '';
+        });
     }
 
     /**

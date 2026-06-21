@@ -30,6 +30,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware('guest')->group(function () {
         Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
         Route::post('login', [LoginController::class, 'login'])->name('login.post');
+        Route::get('login/2fa', [LoginController::class, 'showTwoFactorForm'])->name('login.2fa');
+        Route::post('login/2fa', [LoginController::class, 'verifyTwoFactor'])->name('login.2fa.post');
     });
 
     Route::middleware(['admin.auth'])->group(function () {
@@ -108,6 +110,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::put('users/{id}', [ApiUserController::class, 'update'])->whereNumber('id')->middleware('admin.perm:user:edit')->name('users.update');
             Route::delete('users/{id}', [ApiUserController::class, 'destroy'])->whereNumber('id')->middleware('admin.perm:user:delete')->name('users.destroy');
             Route::post('users/{id}/reset-password', [ApiUserController::class, 'resetPassword'])->whereNumber('id')->middleware('admin.perm:user:reset_password')->name('users.reset_password');
+            Route::post('users/{id}/enable-google2fa', [ApiUserController::class, 'enableGoogle2fa'])->whereNumber('id')->middleware('admin.perm:user:google2fa_enable')->name('users.enable_google2fa');
+            Route::post('users/{id}/disable-google2fa', [ApiUserController::class, 'disableGoogle2fa'])->whereNumber('id')->middleware('admin.perm:user:google2fa_disable')->name('users.disable_google2fa');
+            Route::post('users/{id}/unlock-google2fa', [ApiUserController::class, 'unlockGoogle2fa'])->whereNumber('id')->middleware('admin.perm:user:google2fa_unlock')->name('users.unlock_google2fa');
 
             Route::get('roles', [ApiRoleController::class, 'index'])->middleware('admin.perm:role:list')->name('roles.index');
             Route::get('roles/{id}', [ApiRoleController::class, 'show'])->whereNumber('id')->middleware('admin.perm:role:view')->name('roles.show');
