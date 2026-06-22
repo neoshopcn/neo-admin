@@ -114,8 +114,12 @@
       tags: { type: String, default: '' },
       /** 资源库弹窗每页条数 */
       pickerPageSize: { type: Number, default: 12 },
+      /** 仅作为资源库弹窗使用，不渲染字段 UI（供富文本等场景） */
+      silent: { type: Boolean, default: false },
+      /** 资源库选用时仅允许图片 */
+      imageOnly: { type: Boolean, default: false },
     },
-    emits: ['update:modelValue'],
+    emits: ['update:modelValue', 'picked'],
     data() {
       return {
         uploading: false,
@@ -189,7 +193,12 @@
       },
       confirmPick(row) {
         if (!row || row.storage_path == null) return;
+        if (this.imageOnly && !this.rowIsImage(row)) {
+          ElementPlus.ElMessage.warning('请选择图片文件');
+          return;
+        }
         this.$emit('update:modelValue', String(row.storage_path));
+        this.$emit('picked', row);
         this.pickerVisible = false;
         ElementPlus.ElMessage.success('已选择资源');
       },
@@ -276,7 +285,7 @@
     },
     template: `
       <div class="neo-upload-field" style="width:100%;">
-        <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+        <div v-if="!silent" style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
           <div style="flex-shrink:0;display:flex;flex-direction:column;gap:8px;align-items:flex-start;">
             <img v-if="previewSrc && isImagePreview" :src="previewSrc" alt=""
               style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #ebeef5;display:block;" />

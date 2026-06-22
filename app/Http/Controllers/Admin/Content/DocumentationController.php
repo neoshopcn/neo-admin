@@ -49,6 +49,8 @@ class DocumentationController extends Controller
         return view('admin.content.doc.richtext', [
             'richtextPage' => [
                 'uploadUrl' => url('/admin/api/upload'),
+                'resourcesListUrl' => url('/admin/api/resources'),
+                'storagePublicBase' => rtrim((string) config('filesystems.disks.public.url'), '/'),
             ],
         ]);
     }
