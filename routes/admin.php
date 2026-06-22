@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\Api\ConfigCenterController as ApiConfigCenterController;
 use App\Http\Controllers\Admin\Api\DocDemoController;
 use App\Http\Controllers\Admin\Api\MenuController as ApiMenuController;
 use App\Http\Controllers\Admin\Api\OperationLogController;
@@ -12,8 +13,10 @@ use App\Http\Controllers\Admin\Api\UploadController;
 use App\Http\Controllers\Admin\Api\UserController as ApiUserController;
 use App\Http\Controllers\Admin\Auth\LoginController;
 use App\Http\Controllers\Admin\CaptchaController;
+use App\Http\Controllers\Admin\Content\ApiConfigManageController;
 use App\Http\Controllers\Admin\Content\DashboardController as ContentDashboardController;
 use App\Http\Controllers\Admin\Content\DocumentationController;
+use App\Http\Controllers\Admin\Content\SystemConfigManageController;
 use App\Http\Controllers\Admin\Content\MenuManageController;
 use App\Http\Controllers\Admin\Content\OperationLogPageController;
 use App\Http\Controllers\Admin\Content\ProfileController as ContentProfileController;
@@ -84,6 +87,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('recycle-bin', RecycleBinManageController::class)
                 ->middleware('admin.perm:recycle_bin:list')
                 ->name('recycle_bin');
+
+            Route::get('config/system', SystemConfigManageController::class)
+                ->middleware('admin.perm:system_config:list')
+                ->name('config.system');
+            Route::get('config/api', ApiConfigManageController::class)
+                ->middleware('admin.perm:api_config:list')
+                ->name('config.api');
         });
 
         Route::prefix('api')->name('api.')->middleware(['admin.log'])->group(function () {
@@ -137,6 +147,19 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('resources/{id}', [ApiResourceController::class, 'show'])->whereNumber('id')->middleware('admin.perm:resource:view')->name('resources.show');
             Route::put('resources/{id}', [ApiResourceController::class, 'update'])->whereNumber('id')->middleware('admin.perm:resource:edit')->name('resources.update');
             Route::delete('resources/{id}', [ApiResourceController::class, 'destroy'])->whereNumber('id')->middleware('admin.perm:resource:delete')->name('resources.destroy');
+
+            Route::get('config-center/system', [ApiConfigCenterController::class, 'showSystem'])
+                ->middleware('admin.perm:system_config:list')
+                ->name('config_center.system.show');
+            Route::put('config-center/system/values', [ApiConfigCenterController::class, 'updateSystemValues'])
+                ->middleware('admin.perm:system_config:edit')
+                ->name('config_center.system.update_values');
+            Route::get('config-center/api', [ApiConfigCenterController::class, 'showApi'])
+                ->middleware('admin.perm:api_config:list')
+                ->name('config_center.api.show');
+            Route::put('config-center/api/values', [ApiConfigCenterController::class, 'updateApiValues'])
+                ->middleware('admin.perm:api_config:edit')
+                ->name('config_center.api.update_values');
         });
     });
 });

@@ -106,6 +106,17 @@ final class AdminSeedSupport
         return (int) $id;
     }
 
+    public static function configCenterDirectoryId(): int
+    {
+        $menu = self::syncMenuFolder(0, '配置中心', [
+            'icon' => 'Tools',
+            'sort' => 15,
+            'status' => 1,
+        ]);
+
+        return (int) $menu->id;
+    }
+
     /**
      * @param  array<int, int>  $ids
      * @return array<int, int>

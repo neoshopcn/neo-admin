@@ -1,0 +1,106 @@
+---
+description: 动态配置中心读取规范（ConfigCenter / config_center）
+globs:
+  - "**/*.php"
+alwaysApply: true
+---
+
+# 动态配置中心读取
+
+业务代码读取后台「配置中心」数据时，**必须使用统一读取入口**，禁止直接查 `config_items` 表。
+
+实现位置：
+
+- `App\Support\ConfigCenter`
+- 助手函数 `config_center()`（`app/helpers.php`）
+
+---
+
+# 路径约定
+
+配置路径使用英文 `name`，点号分隔：
+
+```
+page.group.section.item
+```
+
+- **page**：`system`（系统配置）| `api`（接口配置）
+- **group**：分组，如 `site` / `login` / `wechat` / `email`
+- **section**：分区，如 `default` / `mini` / `pay` / `aliyun`
+- **item**：配置 key，如 `site_name` / `mch_id`
+
+---
+
+# 读取方式（按粒度选择）
+
+## 1. 单个配置项（最常用）
+
+```php
+use App\Support\ConfigCenter;
+
+ConfigCenter::item('api', 'wechat', 'pay', 'mch_id', '');
+config_center('api.wechat.pay.mch_id', '');
+```
+
+## 2. 按分区
+
+```php
+ConfigCenter::section('api', 'wechat', 'pay');
+config_center('api.wechat.pay');
+```
+
+## 3. 按组
+
+```php
+ConfigCenter::group('api', 'wechat');
+config_center('api.wechat');
+```
+
+## 4. 点号路径（推荐助手函数）
+
+```php
+// 4 段 = 配置项 | 3 段 = 分区 | 2 段 = 分组
+config_center('system.login.default.login_captcha', false);
+config_center('api.email.default.smtp_host');
+```
+
+---
+
+# 返回值类型
+
+读取结果已按 `type` 转换：
+
+| type | 返回 |
+|------|------|
+| switch | bool |
+| number | int / float |
+| json | array（解析失败则为 string） |
+| 其他 | string |
+| 空值 | null（可传默认值兜底） |
+
+---
+
+# 缓存（必须了解）
+
+- 全量索引缓存键：`config_center:index`
+- 读取自动走 `Cache::remember`
+- 后台保存配置、Seeder 后会 `ConfigCenter::forgetCache()`
+- 若直接改库，需手动：`ConfigCenter::forgetCache()`
+
+---
+
+# 禁止行为
+
+- ❌ `ConfigItem::query()->where('name', ...)` 在业务里散落读取
+- ❌ 用 Laravel `config()` 读取动态配置中心数据
+- ❌ 硬编码应从配置中心获取的密钥、开关、站点信息
+
+---
+
+# 生成业务代码时
+
+需要第三方密钥、站点名、登录策略、邮件 SMTP 等时：
+
+1. 先查 `database/seeders/Admin/ConfigCenterDataSeeder.php` 确认 path
+2. 用 `config_center('...')` 或 `ConfigCenter::item(...)` 读取
+3. 为缺失配置提供合理默认值

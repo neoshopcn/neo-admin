@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use Database\Seeders\Admin\AdminDemoRolesAndUsersSeeder;
 use Database\Seeders\Admin\AdminSeedSupport;
 use Database\Seeders\Admin\AdminSystemDirectorySeeder;
+use Database\Seeders\Admin\ConfigCenterDataSeeder;
+use Database\Seeders\Admin\ConfigCenterMenuSeeder;
 use Database\Seeders\Admin\DashboardMenuSeeder;
 use Database\Seeders\Admin\DocumentationMenuSeeder;
 use Database\Seeders\Admin\MenuManagementMenuSeeder;
@@ -36,6 +38,8 @@ class AdminDemoSeeder extends Seeder
                 RoleManagementMenuSeeder::class,
                 MenuManagementMenuSeeder::class,
                 OperationLogMenuSeeder::class,
+                ConfigCenterMenuSeeder::class,
+                ConfigCenterDataSeeder::class,
                 AdminDemoRolesAndUsersSeeder::class,
             ]);
         });
