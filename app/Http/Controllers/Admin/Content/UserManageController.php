@@ -72,7 +72,6 @@ class UserManageController extends Controller
                         'optionsUrl' => url('/admin/api/roles/options'),
                     ],
                     ['prop' => 'password', 'label' => '密码', 'input' => 'password', 'createOnly' => true],
-                    ['prop' => 'password', 'label' => '新密码(留空不改)', 'input' => 'password', 'editOnly' => true],
                     [
                         'prop' => 'status',
                         'label' => '状态',
