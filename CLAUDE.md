@@ -466,6 +466,5 @@ php artisan db:seed --class="Database\Seeders\Admin\UserManagementMenuSeeder"
 | 文档 | 内容 |
 |------|------|
 | `README.md` | 项目介绍、快速开始 |
-| `.cursor/rules/16-wechat-sdk.mdc` | 微信 SDK 接入规范（详细） |
 | `docs/admin-menu-permission-seed.md` | 菜单、权限、Seeder 详解 |
 | `docs/recycle-bin.md` | 回收站 Trait 接入 |
