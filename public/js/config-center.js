@@ -28,7 +28,7 @@
               v-for="g in groups"
               :key="g.name"
               :name="g.name"
-              :label="groupTabLabel(g)"
+              :label="g.label"
             >
               <el-empty v-if="!g.sections || g.sections.length===0" description="该分组下暂无分区" />
 
@@ -241,9 +241,6 @@
             });
           }
           return [];
-        },
-        groupTabLabel(g) {
-          return this.groupHasChanges(g.name) ? g.label + ' *' : g.label;
         },
         findGroup(groupName) {
           return this.groups.find(function (x) { return x.name === groupName; });
