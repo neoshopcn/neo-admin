@@ -7,17 +7,23 @@
 
     const App = {
       template: `
-        <div v-loading="loading">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap;">
-            <div style="font-size:16px;font-weight:600;color:#303133;">{{ title }}</div>
-            <div style="display:flex;gap:8px;">
+        <div class="neo-config-card" v-loading="loading">
+          <div class="neo-config-top">
+            <div class="neo-config-header">
+              <div class="neo-config-title">{{ title }}</div>
               <el-button @click="reload">刷新</el-button>
             </div>
           </div>
 
-          <el-empty v-if="!loading && groups.length===0" description="暂无配置分组" />
+          <el-empty v-if="!loading && groups.length===0" description="暂无配置分组" style="padding:40px 24px;background:#fff;" />
 
-          <el-tabs v-else v-model="activeGroup" type="border-card" :before-leave="beforeGroupLeave" @tab-change="onGroupChange">
+          <el-tabs
+            v-else
+            v-model="activeGroup"
+            class="neo-config-tabs"
+            :before-leave="beforeGroupLeave"
+            @tab-change="onGroupChange"
+          >
             <el-tab-pane
               v-for="g in groups"
               :key="g.name"
@@ -103,7 +109,7 @@
                   </el-form>
                 </template>
 
-                <el-tabs v-else v-model="activeSection[g.name]" type="card" style="margin-top:4px;">
+                <el-tabs v-else v-model="activeSection[g.name]" type="card" class="neo-config-section-tabs">
                   <el-tab-pane
                     v-for="s in g.sections"
                     :key="s.name"
@@ -113,7 +119,7 @@
                     <el-form
                       :ref="'form_' + g.name + '_' + s.name"
                       label-width="160px"
-                      style="max-width:760px;margin-top:12px;"
+                      style="max-width:760px;"
                     >
                       <el-form-item
                         v-for="item in s.items"
@@ -191,7 +197,7 @@
 
               <div
                 v-if="canEdit && g.sections && g.sections.length"
-                style="margin-top:16px;padding-top:16px;border-top:1px solid #ebeef5;max-width:760px;"
+                class="neo-config-save"
               >
                 <el-button type="primary" :loading="savingGroup === g.name" @click="saveGroup(g)">保存当前配置</el-button>
               </div>
