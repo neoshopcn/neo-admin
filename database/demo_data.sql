@@ -3,7 +3,7 @@
 -- 强烈建议使用 Laravel 迁移与填充自动写入（与哈希密码、外键顺序一致）：
 --   php artisan migrate:fresh --seed
 --
--- 演示账号（由 AdminDemoSeeder 写入）：
+-- 演示账号（由 AdminInitSeeder 写入）：
 --   admin / admin123        — 超级管理员
 --   operator / operator123  — 仅「工作台 + 用户列表只读」演示角色
 --

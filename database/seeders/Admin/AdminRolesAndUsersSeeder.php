@@ -8,9 +8,9 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 
 /**
- * 演示角色、账号及 role_menu（幂等 sync）。
+ * 角色、账号及 role_menu（幂等 sync）。
  */
-class AdminDemoRolesAndUsersSeeder extends Seeder
+class AdminRolesAndUsersSeeder extends Seeder
 {
     public function run(): void
     {

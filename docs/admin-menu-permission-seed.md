@@ -12,7 +12,7 @@
 | **菜单** | `menus` | `type`：`0` 目录、`1` 页面菜单、`2` 按钮；可挂 `permission_code` + `permission_id`。 |
 | **角色 ↔ 菜单** | `role_menu` | 用户能看哪些菜单、侧栏展示哪些节点，由角色关联的**菜单 id** 决定；非超管还会据此汇总 `permission_code` 供前端 `hasPerm` 使用。 |
 
-演示账号与角色在 `AdminDemoRolesAndUsersSeeder` 中维护：**超级管理员**同步**全部**菜单 id；**演示运营**只同步一组 `permission_code` 对应的菜单及其**祖先目录**（见 `expandMenuAncestors`）。
+演示账号与角色在 `AdminRolesAndUsersSeeder` 中维护：**超级管理员**同步**全部**菜单 id；**演示运营**只同步一组 `permission_code` 对应的菜单及其**祖先目录**（见 `expandMenuAncestors`）。
 
 ---
 
@@ -20,8 +20,8 @@
 
 ```
 database/seeders/
-├── DatabaseSeeder.php          # 入口，通常 call AdminDemoSeeder
-├── AdminDemoSeeder.php         # 事务内编排各模块 Seeder
+├── DatabaseSeeder.php          # 入口，通常 call AdminInitSeeder
+├── AdminInitSeeder.php         # 事务内编排各模块 Seeder
 └── Admin/
     ├── AdminSeedSupport.php    # 幂等辅助（权限 / 菜单）
     ├── AdminSystemDirectorySeeder.php
@@ -33,7 +33,7 @@ database/seeders/
     ├── RoleManagementMenuSeeder.php
     ├── MenuManagementMenuSeeder.php
     ├── OperationLogMenuSeeder.php
-    └── AdminDemoRolesAndUsersSeeder.php   # 角色、用户、role_menu
+    └── AdminRolesAndUsersSeeder.php   # 角色、用户、role_menu
 ```
 
 **执行示例：**
@@ -41,14 +41,14 @@ database/seeders/
 ```bash
 php artisan db:seed
 # 或仅演示数据
-php artisan db:seed --class=AdminDemoSeeder
+php artisan db:seed --class=AdminInitSeeder
 ```
 
-`AdminDemoSeeder` 在**单事务**中执行，失败会整体回滚；每次开始会 `AdminSeedSupport::clearPermissionCache()`，避免跨次运行的静态缓存干扰。
+`AdminInitSeeder` 在**单事务**中执行，失败会整体回滚；每次开始会 `AdminSeedSupport::clearPermissionCache()`，避免跨次运行的静态缓存干扰。
 
-### 2.1 单独执行某个 Seeder（不必写入 AdminDemoSeeder）
+### 2.1 单独执行某个 Seeder（不必写入 AdminInitSeeder）
 
-模块 Seeder **不是**必须加入 `AdminDemoSeeder.php`。只要类文件存在且命名空间正确，可用命令行**只跑这一类**：
+模块 Seeder **不是**必须加入 `AdminInitSeeder.php`。只要类文件存在且命名空间正确，可用命令行**只跑这一类**：
 
 ```bash
 php artisan db:seed --class="Database\Seeders\Admin\OrderManagementMenuSeeder"
@@ -58,10 +58,10 @@ php artisan db:seed --class="Database\Seeders\Admin\OrderManagementMenuSeeder"
 
 | 方式 | 适用场景 |
 |------|----------|
-| 写入 `AdminDemoSeeder::call([...])` | `php artisan db:seed` / `db:seed --class=AdminDemoSeeder` 时**一键**写入全部演示菜单与权限，适合新环境、CI 全量。 |
+| 写入 `AdminInitSeeder::call([...])` | `php artisan db:seed` / `db:seed --class=AdminInitSeeder` 时**一键**写入全部演示菜单与权限，适合新环境、CI 全量。 |
 | `db:seed --class=某个 Seeder` | **只补**某一模块的权限/菜单，不必改编排文件；可多次执行（幂等）。 |
 
-两种方式可**同时采用**：日常全量用 `AdminDemoSeeder`，线上或本地只增量时用 `--class`。
+两种方式可**同时采用**：日常全量用 `AdminInitSeeder`，线上或本地只增量时用 `--class`。
 
 **依赖前提：** 若该 Seeder 调用了 `systemManagementDirectoryId()`，库里须已有「系统管理」目录（通常由 `AdminSystemDirectorySeeder` 写入）。仅在新库上跑模块 Seeder 时，可先执行：
 
@@ -70,7 +70,7 @@ php artisan db:seed --class="Database\Seeders\Admin\AdminSystemDirectorySeeder"
 php artisan db:seed --class="Database\Seeders\Admin\OrderManagementMenuSeeder"
 ```
 
-单独执行模块 Seeder **不会**自动更新 `AdminDemoRolesAndUsersSeeder` 里的 `role_menu`；若要给某角色开放新菜单，仍需在后台「角色授权」里勾选，或改 `AdminDemoRolesAndUsersSeeder` 后再跑一次该 Seeder。
+单独执行模块 Seeder **不会**自动更新 `AdminRolesAndUsersSeeder` 里的 `role_menu`；若要给某角色开放新菜单，仍需在后台「角色授权」里勾选，或改 `AdminRolesAndUsersSeeder` 后再跑一次该 Seeder。
 
 ---
 
@@ -121,8 +121,8 @@ AdminSeedSupport::syncMenuFolder(0, '营销管理', [
 2. 在 `database/seeders/Admin/` 新建 `XxxMenuSeeder.php`：
    - 顶部 `private const PERMISSIONS = [...]`；
    - `run()` 中先 `syncPermissions`，再 `syncMenuFolder` / `syncMenuByPermissionCode`。
-3. **（可选）**将 `XxxMenuSeeder::class` 插入 `AdminDemoSeeder::call([...])` 的**合适顺序**，以便全量 seed 时带上该模块；若只想命令行增量执行，可跳过本步，改用 `php artisan db:seed --class=Database\Seeders\Admin\XxxMenuSeeder`（见 §2.1）。依赖「系统管理」的模块，须保证已跑过 `AdminSystemDirectorySeeder`。
-4. 若需给**演示运营**等新角色开放菜单：在 `AdminDemoRolesAndUsersSeeder` 里调整 `$opCodes` 或单独 `sync` 逻辑；仅单独跑模块 Seeder 时，不会自动改角色菜单，需在后台授权或再跑角色 Seeder。
+3. **（可选）**将 `XxxMenuSeeder::class` 插入 `AdminInitSeeder::call([...])` 的**合适顺序**，以便全量 seed 时带上该模块；若只想命令行增量执行，可跳过本步，改用 `php artisan db:seed --class=Database\Seeders\Admin\XxxMenuSeeder`（见 §2.1）。依赖「系统管理」的模块，须保证已跑过 `AdminSystemDirectorySeeder`。
+4. 若需给**演示运营**等新角色开放菜单：在 `AdminRolesAndUsersSeeder` 里调整 `$opCodes` 或单独 `sync` 逻辑；仅单独跑模块 Seeder 时，不会自动改角色菜单，需在后台授权或再跑角色 Seeder。
 5. 生产环境首次上线：确保执行过 Seeder 或等价 SQL，否则 `permissions` / `menus` / `role_menu` 不完整。
 
 ---
@@ -183,7 +183,7 @@ class OrderManagementMenuSeeder extends Seeder
 }
 ```
 
-**（可选）在 `AdminDemoSeeder.php` 中注册**，以便全量 `db:seed` 时一并执行：
+**（可选）在 `AdminInitSeeder.php` 中注册**，以便全量 `db:seed` 时一并执行：
 
 ```php
 $this->call([
@@ -191,7 +191,7 @@ $this->call([
     // ... 其他模块 ...
     OperationLogMenuSeeder::class,
     OrderManagementMenuSeeder::class,   // 新增
-    AdminDemoRolesAndUsersSeeder::class,
+    AdminRolesAndUsersSeeder::class,
 ]);
 ```
 
@@ -201,17 +201,17 @@ $this->call([
 php artisan db:seed --class="Database\Seeders\Admin\OrderManagementMenuSeeder"
 ```
 
-**给演示运营开放「仅列表 + 查看」时**，在 `AdminDemoRolesAndUsersSeeder` 的 `$opCodes` 中追加：
+**给演示运营开放「仅列表 + 查看」时**，在 `AdminRolesAndUsersSeeder` 的 `$opCodes` 中追加：
 
 ```php
 'order:list',
 'order:view',
 ```
 
-保存后重新执行 `AdminDemoSeeder`，或仅同步角色菜单：
+保存后重新执行 `AdminInitSeeder`，或仅同步角色菜单：
 
 ```bash
-php artisan db:seed --class="Database\Seeders\Admin\AdminDemoRolesAndUsersSeeder"
+php artisan db:seed --class="Database\Seeders\Admin\AdminRolesAndUsersSeeder"
 ```
 
 `expandMenuAncestors` 会自动带上「系统管理」等父级目录。
@@ -229,7 +229,7 @@ php artisan db:seed --class="Database\Seeders\Admin\AdminDemoRolesAndUsersSeeder
 | 演示用户 | `User::firstOrCreate(['username' => …], …)`，**不反复覆盖已存在用户的密码** |
 | 角色菜单 | `$role->menus()->sync($ids)`，与当前菜单树对齐 |
 
-可多次执行 `AdminDemoSeeder`；若业务库已手工改过菜单名/排序，下次 seed 会以 `updateOrCreate` 的匹配键为准覆盖同键记录，生产环境请谨慎执行。
+可多次执行 `AdminInitSeeder`；若业务库已手工改过菜单名/排序，下次 seed 会以 `updateOrCreate` 的匹配键为准覆盖同键记录，生产环境请谨慎执行。
 
 ---
 
@@ -256,6 +256,6 @@ php artisan db:seed --class="Database\Seeders\Admin\AdminDemoRolesAndUsersSeeder
 | `RoleManagementMenuSeeder` | 角色管理 |
 | `MenuManagementMenuSeeder` | 菜单管理 |
 | `OperationLogMenuSeeder` | 操作日志 + 删除 |
-| `AdminDemoRolesAndUsersSeeder` | 角色、用户、`role_menu` |
+| `AdminRolesAndUsersSeeder` | 角色、用户、`role_menu` |
 
 更细的字段含义以迁移文件 `database/migrations/*_create_menus_table.php`、`*_create_permissions_table.php` 为准。

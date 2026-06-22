@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use Database\Seeders\Admin\AdminDemoRolesAndUsersSeeder;
+use Database\Seeders\Admin\AdminRolesAndUsersSeeder;
 use Database\Seeders\Admin\AdminSeedSupport;
 use Database\Seeders\Admin\AdminSystemDirectorySeeder;
 use Database\Seeders\Admin\ConfigCenterDataSeeder;
@@ -19,9 +19,9 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 /**
- * 演示权限、菜单、角色与账号：按模块拆分 Seeder，声明式配置见各子类。
+ * 初始化权限、菜单、角色与账号：按模块拆分 Seeder，声明式配置见各子类。
  */
-class AdminDemoSeeder extends Seeder
+class AdminInitSeeder extends Seeder
 {
     public function run(): void
     {
@@ -40,7 +40,7 @@ class AdminDemoSeeder extends Seeder
                 OperationLogMenuSeeder::class,
                 ConfigCenterMenuSeeder::class,
                 ConfigCenterDataSeeder::class,
-                AdminDemoRolesAndUsersSeeder::class,
+                AdminRolesAndUsersSeeder::class,
             ]);
         });
     }

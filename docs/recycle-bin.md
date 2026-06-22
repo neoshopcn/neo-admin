@@ -144,7 +144,7 @@ public static function recycleBinHydratePayload(array $payload): array
 - `POST /admin/api/recycle-bin/items/{id}/restore`
 - `DELETE /admin/api/recycle-bin/items/{id}`
 
-演示种子：`AdminDemoSeeder` 已增加一级菜单「回收站管理」及按钮权限；超级管理员默认拥有全部菜单。
+演示种子：`AdminInitSeeder` 已增加一级菜单「回收站管理」及按钮权限；超级管理员默认拥有全部菜单。
 
 ---
 

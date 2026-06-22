@@ -315,8 +315,8 @@ ConfigCenter::section('api', 'wechat', 'pay');
 2. 新建 `database/seeders/Admin/XxxMenuSeeder.php`：
    - `PERMISSIONS` 常量 → `AdminSeedSupport::syncPermissions()`
    - `syncMenuByPermissionCode()` 创建菜单与按钮
-3. （可选）注册到 `AdminDemoSeeder::call([...])`
-4. 给演示角色开放：修改 `AdminDemoRolesAndUsersSeeder` 或在后台「角色授权」勾选
+3. （可选）注册到 `AdminInitSeeder::call([...])`
+4. 给演示角色开放：修改 `AdminRolesAndUsersSeeder` 或在后台「角色授权」勾选
 
 ```bash
 php artisan db:seed --class="Database\Seeders\Admin\OrderManagementMenuSeeder"
@@ -360,7 +360,7 @@ class Post extends Model
 5. **Api Controller** — `ApiResponse` + `AppliesListFilters` + validate
 6. **Blade 视图** — 继承 `admin.layouts.content`，挂载 `neo-table` 或自定义 Vue
 7. **MenuSeeder** — 权限与菜单（参考 `UserManagementMenuSeeder`）
-8. **（可选）** 注册到 `AdminDemoSeeder`
+8. **（可选）** 注册到 `AdminInitSeeder`
 
 `$neo` 配置关键字段：
 
@@ -411,7 +411,7 @@ php artisan db:seed
 php artisan serve
 
 # 演示数据（事务内幂等）
-php artisan db:seed --class=AdminDemoSeeder
+php artisan db:seed --class=AdminInitSeeder
 
 # 单独模块 Seeder
 php artisan db:seed --class="Database\Seeders\Admin\UserManagementMenuSeeder"
