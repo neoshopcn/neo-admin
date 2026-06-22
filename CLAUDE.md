@@ -297,6 +297,22 @@ ConfigCenter::section('api', 'wechat', 'pay');
 
 ---
 
+## 微信 SDK（概要）
+
+- **依赖**：`w7corp/easywechat:^6.17`；业务层**禁止**直接使用 EasyWeChat SDK
+- **入口**：`WechatManager::miniProgram()` / `payment()` / `officialAccount()`；配置变更后 `forgetInstances()`
+- **配置**：仅 `config_center('api.wechat.mini|mp|pay', [])`；映射集中在 `ConfigMapper`；禁止 `config('wechat')`
+- **证书**：配置中心存 PEM 全文（含 BEGIN/END），直传 SDK，不落盘
+- **封装**（`App\Support\Wechat\*`）：
+  - `MiniProgram` — `code2Session`、`getUnlimitedQRCode`、`decryptSession`
+  - `Payment` — `buildMiniProgramPayParams`（下单+调起参数）、`createDomesticRefund`、`handlePayNotify`
+  - `OfficialAccount` — `getServer` / `getOAuth` / `getClient`
+- **日志**：`Log::channel('wechat')` → `storage/logs/wechat.log`（single）；写在封装层；context 含 `action`；禁止记 secret/PEM/session_key
+- **支付安全**：回调须查单确认终态；回调路由 POST 且排除 CSRF
+- **分层**：微信 API 在 Support 封装；订单/退款业务在 Service；Controller 只做校验与响应
+
+---
+
 ## 权限与菜单
 
 ### 运行时鉴权
@@ -450,5 +466,6 @@ php artisan db:seed --class="Database\Seeders\Admin\UserManagementMenuSeeder"
 | 文档 | 内容 |
 |------|------|
 | `README.md` | 项目介绍、快速开始 |
+| `.cursor/rules/16-wechat-sdk.mdc` | 微信 SDK 接入规范（详细） |
 | `docs/admin-menu-permission-seed.md` | 菜单、权限、Seeder 详解 |
 | `docs/recycle-bin.md` | 回收站 Trait 接入 |

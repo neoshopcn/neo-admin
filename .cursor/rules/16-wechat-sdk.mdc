@@ -1,0 +1,403 @@
+---
+description: 微信 SDK 接入规范（EasyWeChat / WechatManager）
+globs:
+  - "**/*.php"
+alwaysApply: true
+---
+
+# 微信 SDK
+
+微信相关接口使用 **w7corp/easywechat 6.17+**。
+
+```bash
+composer require w7corp/easywechat:^6.17
+```
+
+参考文档：[EasyWeChat 6.x 总览](https://easywechat.com/6.x/)
+
+---
+
+# 架构约定（必须实现）
+
+业务代码**不得**直接使用 EasyWeChat SDK，必须通过以下封装访问：
+
+| 路径 | 职责 |
+|------|------|
+| `App\Support\WechatManager` | 统一入口；进程内单例缓存 Application / 封装实例 |
+| `App\Support\Wechat\ConfigMapper` | 将 `config_center('api.wechat.*')` 映射为 EasyWeChat 配置数组 |
+| `App\Support\Wechat\MiniProgram` | 小程序 |
+| `App\Support\Wechat\Payment` | 支付（下单、退款、回调） |
+| `App\Support\Wechat\OfficialAccount` | 公众号 |
+
+`WechatManager` 对外静态方法（固定命名）：
+
+```php
+WechatManager::miniProgram();      // → MiniProgram
+WechatManager::payment();          // → Payment
+WechatManager::officialAccount();  // → OfficialAccount
+WechatManager::forgetInstances();  // 测试 / Octane / 配置变更后清缓存
+```
+
+---
+
+# 配置读取
+
+微信配置**必须**通过配置中心读取：
+
+```php
+config_center('api.wechat.mini', []); // 小程序
+config_center('api.wechat.mp', []);   // 公众号
+config_center('api.wechat.pay', []); // 微信支付
+```
+
+配置项定义见 `database/seeders/Admin/ConfigCenterDataSeeder.php` → `seedWechatConfig()`。
+
+**禁止**：
+
+- `config('wechat')` 或 Laravel 静态配置文件承载密钥
+- 业务层手写 `ConfigItem::query()` 查微信密钥
+- 硬编码 appid、secret、mch_id、PEM 等
+
+配置变更后：`ConfigCenter::forgetCache()` + `WechatManager::forgetInstances()`。
+
+---
+
+# 配置中心 → EasyWeChat 映射
+
+由 `ConfigMapper` 集中完成，业务代码禁止散落映射逻辑。
+
+| 配置中心 key | EasyWeChat key | 说明 |
+|---|---|---|
+| `appid` | `app_id` | 小程序 / 公众号 |
+| `secret` | `secret` | |
+| `token` | `token` | 服务端消息校验，可选 |
+| `encoding_aes_key` | `aes_key` | 消息加解密，可选 |
+| `mch_id` | `mch_id` | 商户号 |
+| `secret_key` | `secret_key` | APIv3 密钥 |
+| `private_key` | `private_key` | 商户 API 私钥 |
+| `certificate` | `certificate` | 商户 API 证书 |
+| `platform_cert_id` + `platform_cert` | `platform_certs` | `[id => pem]`，见下文 |
+| `notify_url` | — | **仅**作为下单/退款请求字段，不是 Application 构造参数 |
+
+小程序 / 公众号 Application 额外建议：
+
+```php
+'http' => ['throw' => true, 'timeout' => 5.0, 'retry' => true],
+```
+
+支付 Application 额外建议：
+
+```php
+'http' => ['throw' => true, 'timeout' => 5.0], // 支付模块禁止开启 retry
+```
+
+---
+
+# 证书存储约定
+
+- 配置中心以 **PEM 完整文本**存储，**必须包含** `-----BEGIN ...-----` 与 `-----END ...-----`
+- EasyWeChat 6.x 的 `PrivateKey` / `PublicKey` **支持 PEM 字符串**，配置中心 PEM **直传 SDK，业务层不落盘**
+- `platform_cert_id`：微信支付公钥 ID（`PUB_KEY_ID_...`）或平台证书序列号（Seeder 标签为「证书序列号」，公钥模式同样填此字段）
+- `platform_cert`：对应公钥 / 平台证书 PEM，与 `platform_cert_id` 成对填入 `platform_certs`
+
+`ConfigMapper` 应提供 `normalizePem(string $pem): string`：trim、统一换行、校验含 BEGIN 头。
+
+---
+
+# 文件日志（必须）
+
+微信相关调用**必须**写入独立文件日志，使用 Laravel 日志门面：
+
+```php
+use Illuminate\Support\Facades\Log;
+```
+
+禁止仅用 `Log::info()` 走默认 `laravel.log`；**必须**指定 `wechat` 通道：
+
+```php
+Log::channel('wechat')->info('message', $context);
+Log::channel('wechat')->warning('message', $context);
+Log::channel('wechat')->error('message', $context);
+```
+
+日志写在 `App\Support\Wechat\*` 封装层（`try/catch/finally`）。
+
+## 日志通道
+
+在 `config/logging.php` 增加 `wechat` 通道（实现 Wechat 封装时一并添加）：
+
+```php
+'wechat' => [
+    'driver' => 'single',
+    'path' => storage_path('logs/wechat.log'),
+    'level' => env('LOG_LEVEL', 'debug'),
+    'replace_placeholders' => true,
+],
+```
+
+## 写法约定
+
+封装类内可提取私有方法，内部仍调用 `Log::channel('wechat')`：
+
+```php
+use Illuminate\Support\Facades\Log;
+
+private function logWechat(string $level, string $message, array $context = []): void
+{
+    if (! in_array($level, ['debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency'], true)) {
+        $level = 'info';
+    }
+
+    Log::channel('wechat')->{$level}($message, array_merge([
+        'action' => $context['action'] ?? 'unknown',
+        'success' => $context['success'] ?? null,
+    ], $context));
+}
+
+// 示例
+$this->logWechat('info', 'pay.order.create.start', [
+    'action' => 'pay.order.create.start',
+    'out_trade_no' => $no,
+]);
+
+$this->logWechat('error', 'pay.order.create.exception', [
+    'action' => 'pay.order.create.exception',
+    'success' => false,
+    'out_trade_no' => $no,
+    'exception' => $e->getMessage(),
+]);
+```
+
+每条日志 `context` **必须**包含：
+
+| 字段 | 说明 |
+|------|------|
+| `action` | 动作标识，见下表 |
+| `success` | 可选；`start` 可不填；`success` / `failed` / `exception` 必须明确 `true` / `false` |
+| `duration_ms` | 可选，外部 API 调用耗时 |
+
+**禁止**写入日志：PEM、secret、APIv3 密钥、完整 `session_key`、`paySign`、用户手机号等敏感字段；openid / 订单号可记。
+
+## 必须记录的位置
+
+日志写在 `App\Support\Wechat\*` 封装层（`try/catch/finally`），**不要**依赖 Controller 补记。
+
+| action | 位置 | 至少记录时机 |
+|--------|------|----------------|
+| `pay.order.create.start` | `Payment::buildMiniProgramPayParams` | 调用微信 JSAPI 下单前 |
+| `pay.order.create.success` | 同上 | 取得 `prepay_id` 后 |
+| `pay.order.create.failed` | 同上 | 微信返回业务失败（含 HTTP 状态 / `code` / `message` 等响应摘要） |
+| `pay.order.create.exception` | 同上 | **任何**抛异常 / catch 前，再 rethrow |
+| `pay.refund.create.start` | `Payment::createDomesticRefund` | 发起退款前 |
+| `pay.refund.create.success` | 同上 | 退款受理成功 |
+| `pay.refund.create.failed` | 同上 | 微信返回失败 |
+| `pay.refund.create.exception` | 同上 | catch 前必记 |
+| `pay.notify.received` | `Payment::handlePayNotify` | 收到回调原始入口（event_type / out_trade_no） |
+| `pay.notify.paid` | 同上 `handlePaid` | 进入支付成功分支 |
+| `pay.notify.refunded` | 同上 `handleRefunded` | 进入退款通知分支 |
+| `pay.notify.handler_failed` | 同上 | 业务 handler 抛错或返回失败 |
+| `pay.notify.exception` | 同上 | 解密 / 验签 / serve 异常，catch 前必记 |
+| `mini.code2session.start` | `MiniProgram::code2Session` | 请求前（勿记 code 明文，可记 hash 前缀） |
+| `mini.code2session.success` | 同上 | 取得 openid 后 |
+| `mini.code2session.failed` | 同上 | errcode ≠ 0 或无 openid |
+| `mini.code2session.exception` | 同上 | catch 前必记 |
+| `mini.qrcode.failed` | `MiniProgram::getUnlimitedQRCode` | JSON 错误体 / 异常 |
+| `mini.decrypt.failed` | `MiniProgram::decryptSession` | 解密失败 / 异常 |
+
+公众号 `getServer()` 消息推送、OAuth 等等价补齐：`oa.server.*`、`oa.oauth.*`。
+
+## 错误必须先落盘
+
+- 调用微信 API **之前**若参数校验失败（配置缺失、金额非法等），用 `warning` 记 `*.failed`，再抛异常
+- `catch (\Throwable $e)` 内：**先** `Log::channel('wechat')->error(...)`，**再** `throw $e` 或转换为业务异常
+- 回调 handler 内业务异常：封装层 `handlePayNotify` 也应 catch 并记 `pay.notify.handler_failed`，避免仅业务层 silent fail
+- 禁止 `empty catch`、禁止吞掉微信错误而不写文件日志
+
+## 日志级别约定
+
+| 级别 | 场景 |
+|------|------|
+| `info` | 正常 start / success |
+| `warning` | 微信业务错误、参数校验失败、查单状态不一致 |
+| `error` | 异常、验签失败、不可恢复的 SDK 错误 |
+
+---
+
+# App\Support\Wechat\MiniProgram
+
+参考文档：
+
+- [EasyWeChat 小程序](https://easywechat.com/6.x/mini-app/)
+- [EasyWeChat 工具类](https://easywechat.com/6.x/mini-app/utils.html)
+
+封装类**必须**提供以下方法（内部持有 `EasyWeChat\MiniApp\Application`）：
+
+## code2Session — 登录凭证校验
+
+对应微信 `auth.code2Session`（HTTPS：`jscode2session`）。
+
+- [微信开放文档](https://developers.weixin.qq.com/miniprogram/dev/server/API/user-login/api_code2session.html)
+
+```php
+/**
+ * @see https://easywechat.com/6.x/mini-app/utils.html
+ * @see https://developers.weixin.qq.com/miniprogram/dev/server/API/user-login/api_code2session.html
+ */
+public function code2Session(string $code): array
+{
+    return $this->application->getUtils()->codeToSession($code);
+}
+```
+
+## getUnlimitedQRCode — 不限制小程序码
+
+- 使用 `$this->application->getClient()->postJson('/wxa/getwxacodeunlimit', $payload)`
+- **禁止**直接调用 `createClient()`；对外统一使用 `getClient()`（内部会创建 Client）
+- 成功返回**二进制图片内容**（PNG/JPEG）；若响应为 JSON 则视为失败并抛异常
+- 封装私有方法 `unwrapQrCodeImageContent()` 区分图片流与错误 JSON
+
+## decryptSession — 解密会话信息
+
+```php
+public function decryptSession(string $sessionKey, string $iv, string $encryptedData): array
+{
+    return $this->application->getUtils()->decryptSession($sessionKey, $iv, $encryptedData);
+}
+```
+
+说明：legacy 用户信息解密；获取手机号请走微信 `getPhoneNumber` 接口（若 EasyWeChat 版本未封装，可在 `MiniProgram` 内用 `getClient()->postJson` 调用，勿在业务层直连 SDK）。
+
+---
+
+# App\Support\Wechat\Payment
+
+参考文档：
+
+- [EasyWeChat 支付](https://easywechat.com/6.x/pay/)
+- [支付工具](https://easywechat.com/6.x/pay/utils.html)
+- [支付服务端 / 回调](https://easywechat.com/6.x/pay/server.html)
+- [Laravel 回调示例](https://easywechat.com/6.x/pay/examples.html)
+
+封装类**必须**实现三大能力：**下单**、**退款**、**回调**；各方法内按「文件日志」章节使用 `Log::channel('wechat')`。
+
+## buildMiniProgramPayParams — 小程序支付（下单 + 调起参数）
+
+**一步**完成：
+
+1. `POST v3/pay/transactions/jsapi` 创建预支付单，取得 `prepay_id`
+2. `$app->getUtils()->buildMiniAppConfig($prepayId, $miniAppId)` 生成 `wx.requestPayment` 参数
+
+建议入参结构：
+
+```php
+[
+    'description' => string,    // 商品描述
+    'out_trade_no' => string,   // 商户订单号
+    'amount_total' => int,      // 金额（分）
+    'payer_openid' => string,   // 小程序 openid
+    'attach' => ?string,
+    'notify_url' => ?string,    // 可选，默认 config_center notify_url
+]
+```
+
+建议返回：
+
+```php
+[
+    'prepay_id' => string,
+    'payment' => [              // timeStamp, nonceStr, package, signType, paySign
+        // ...
+    ],
+]
+```
+
+- `appid` 取自 `config_center('api.wechat.mini')['appid']`
+- `mchid` 取自 `config_center('api.wechat.pay')['mch_id']`
+- `notify_url` 必须为 **HTTPS**
+
+## createDomesticRefund — 境内普通退款
+
+调用 `POST v3/refund/domestic/refunds`。
+
+建议入参：
+
+```php
+[
+    'out_refund_no' => string,       // 商户退款单号
+    'refund_amount' => int,          // 退款金额（分）
+    'total_amount' => int,           // 原订单金额（分）
+    'out_trade_no' => ?string,       // 与 transaction_id 二选一
+    'transaction_id' => ?string,
+    'reason' => ?string,
+    'notify_url' => ?string,
+]
+```
+
+## handlePayNotify — 支付 / 退款回调
+
+封装 `EasyWeChat\Pay\Server`：
+
+- `handlePaid(callable $handler)` — 支付成功通知
+- `handleRefunded(callable $handler)` — 退款结果通知（可选第二参数）
+- `serve()` — 返回 PSR-7 Response
+
+```php
+public function handlePayNotify(
+    callable $onPaid,
+    ?callable $onRefunded = null,
+): \Psr\Http\Message\ResponseInterface;
+```
+
+路由约定：
+
+- 单独 POST 路由，**排除 CSRF**
+- `notify_url` 与路由地址一致，且为 HTTPS
+- 每次请求使用当前 HTTP Request 构造 PSR-7 ServerRequest（勿复用缓存的旧 Server 实例）
+
+安全要求（官方强制）：
+
+- 回调内容可能伪造或重复；**只取** `out_trade_no` / `transaction_id` 等必要字段
+- **必须**再调用微信支付查单接口（如 `GET v3/pay/transactions/out-trade-no/{out_trade_no}`）确认终态，再更新业务订单；查单逻辑可封装为 `Payment::queryOrderByOutTradeNo()` 等方法
+
+---
+
+# App\Support\Wechat\OfficialAccount
+
+参考文档：[EasyWeChat 公众号](https://easywechat.com/6.x/official-account/)
+
+封装类对外暴露（禁止业务层直接 `new OfficialAccount\Application`）：
+
+| 方法 | 用途 |
+|------|------|
+| `getServer()` | 服务端验证、消息与事件推送 |
+| `getOAuth()` | 网页授权 |
+| `getClient()` | 调用公众号 API |
+
+配置读取 `config_center('api.wechat.mp', [])`，映射规则同小程序。
+
+---
+
+# 禁止行为
+
+- ❌ easywechat **6.17 以下**版本
+- ❌ Controller / Service / Job / Repository / Model **直接使用** EasyWeChat SDK
+- ❌ `config('wechat')` 或散落查 `config_items`
+- ❌ 多次 `new EasyWeChat\*\Application`（必须经 `WechatManager` 单例）
+- ❌ 将配置中心 PEM **落盘**到业务目录（应 PEM 字符串直传 SDK）
+- ❌ 支付模块开启 HTTP retry
+- ❌ 仅凭支付 / 退款回调更新订单终态而不查单
+- ❌ 微信下单 / 退款 / 回调 / 小程序登录等关键路径**不写** `Log::channel('wechat')` 文件日志
+- ❌ 微信日志写入默认 `Log::info()` / `laravel.log` 而不走 `wechat` 通道
+- ❌ catch 微信异常后不记日志直接抛出或返回
+- ❌ 将 secret、PEM、session_key 等写入日志 context
+
+---
+
+# 生成业务代码时
+
+1. 查 `ConfigCenterDataSeeder::seedWechatConfig()` 确认 path 与字段名
+2. 经 `WechatManager` 获取封装类；映射逻辑只写在 `ConfigMapper`
+3. 支付下单、退款、查单、回调处理放在 **Service** 层
+4. Controller 只做参数校验、调用 Service、返回 HTTP / PSR-7 响应
+5. 新增微信能力时，先扩展 `App\Support\Wechat\*` 封装（含 `Log::channel('wechat')` 日志），再在 Service 中调用
+6. 实现 `config/logging.php` 的 `wechat` 通道后再接入支付 / 小程序 API
